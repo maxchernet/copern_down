@@ -1,0 +1,30 @@
+Python 2.7, 3.3 or higher
+
+Required python packages
+
+numpy
+snappy
+fiona
+psutil
+
+
+
+SNAPPY requirements:
+
+In order to use snappy ESA SNAP software has to be installed
+
+Install JDK
+Env. variables JAVA_HOME and JDK_HOME
+
+Install JPY
+git clone https://github.com/bcdev/jpy.git
+conda install -c conda-forge maven
+cd <jpy dir>
+python setup.py --maven bdist_wheel
+pip install dist/jpy-0.10.0.dev1-cp27-cp27m-macosx_10_6_x86_64.whl
+
+
+
+SNAPPY instalation:
+cd <snap-install-dir>/bin
+./snappy-conf <python-exe>
