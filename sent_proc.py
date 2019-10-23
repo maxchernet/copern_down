@@ -223,6 +223,7 @@ if __name__ == "__main__":
     else:
         print('Subset file does not exist or you want to process the whole scene')
         f_sub = f_cal
+        p_sub = p_cal
 
     timeBeforeOrb = time.clock()
     print('Extract orbit')
