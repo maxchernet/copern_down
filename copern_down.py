@@ -33,7 +33,7 @@ query_res = 'query_results.txt'
 
 # Do a wget string
 com_str = 'wget --no-check-certificate ' +\
-          '--user=Sigil --password=Maxim1978 ' +\
+          '--user=*** --password=*** ' +\
           '--output-document=%s ' % query_res +\
           '"https://scihub.copernicus.eu/dhus/search?q=' +\
           'footprint:\\"Intersects(%s)\\" AND ' % poly_str +\
