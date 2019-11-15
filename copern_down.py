@@ -10,7 +10,18 @@ import subprocess as sp
 # import wget
 # import urllib.request
 
-srs_shp = fi.collection('/Users/max/satellite/cervest/shp/cropmap2017_wgs84.shp', 'r')
+
+# shp_file = '/home/maksim/vector/cropmap2017_wgs84/cropmap2017_wgs84.shp'
+shp_file = '/home/maksim/vector/french_farms/french_farms_rect.shp'
+
+srs_shp = fi.collection(shp_file, 'r')
+dir_out = '/media/fun-drive/datasets/s1_scihub/french_farms/'
+
+#product_type = 'SLC'
+producttype = 'GRD'
+#producttype = 'S2MSI1C'
+#platformname = 'Sentinel-2'
+platformname = 'Sentinel-1'
 
 # Get all the coordinates from a shape file. I.e. it doesn't necessary to be a rectangle.
 # It can consist of many records but we extract an outline of the whole thing.
@@ -31,14 +42,18 @@ poly_str = 'POLYGON((%.4f %.4f, %.4f %.4f, %.4f %.4f, %.4f %.4f, %.4f %.4f))' % 
 
 query_res = 'query_results.txt'
 
+#'beginposition:[2019-10-27T00:00:00.000Z TO NOW] AND ' +\
+# 2019-10-01T00:00:00.000Z TO 2019-10-13T00:00:00.000Z
 # Do a wget string
 com_str = 'wget --no-check-certificate ' +\
-          '--user=*** --password=*** ' +\
+          '--user=cervest --password=cervest69 ' +\
           '--output-document=%s ' % query_res +\
           '"https://scihub.copernicus.eu/dhus/search?q=' +\
           'footprint:\\"Intersects(%s)\\" AND ' % poly_str +\
-          'beginposition:[2019-10-01T00:00:00.000Z TO NOW] AND ' +\
-          'producttype:GRD"'
+          'beginposition:[2018-01-01T00:00:00.000Z TO NOW] AND ' +\
+          'rows=10 AND start=0 AND ' +\
+          'platformname:%s AND ' % platformname +\
+          'producttype:%s"' % producttype
 print(com_str)
 sp.check_output(com_str, shell=True)
 
@@ -53,6 +68,7 @@ with open(query_res) as f:
         if 'uuid' in line:
             uuid = line.split('>')[1].split('<')[0]
             com_str = 'wget --content-disposition --continue ' +\
-            '--user=Sigil --password=Maxim1978 ' +\
-            '"https://scihub.copernicus.eu/dhus/odata/v1/Products(\'' + uuid + '\')/\$value"'
-            sp.check_output(com_str, shell=True)
+            '--user=cervest --password=cervest69 ' +\
+            '"https://scihub.copernicus.eu/dhus/odata/v1/Products(\'' + uuid + '\')/\$value" ' +\
+            '-P %s' % dir_out
+            #sp.check_output(com_str, shell=True)
