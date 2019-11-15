@@ -44,14 +44,16 @@ query_res = 'query_results.txt'
 
 #'beginposition:[2019-10-27T00:00:00.000Z TO NOW] AND ' +\
 # 2019-10-01T00:00:00.000Z TO 2019-10-13T00:00:00.000Z
+
+#  'rows=10 AND start=0 AND ' +\
+
 # Do a wget string
 com_str = 'wget --no-check-certificate ' +\
           '--user=cervest --password=cervest69 ' +\
           '--output-document=%s ' % query_res +\
-          '"https://scihub.copernicus.eu/dhus/search?q=' +\
+          '"https://scihub.copernicus.eu/dhus/search?start=100&rows=100&q=' +\
           'footprint:\\"Intersects(%s)\\" AND ' % poly_str +\
           'beginposition:[2018-01-01T00:00:00.000Z TO NOW] AND ' +\
-          'rows=10 AND start=0 AND ' +\
           'platformname:%s AND ' % platformname +\
           'producttype:%s"' % producttype
 print(com_str)
