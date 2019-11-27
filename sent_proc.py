@@ -1,8 +1,6 @@
 """
 SNAPPY based processing of Sentinel-1 data
 
-Version: 0.0.2
-
 Author: Maxim Chernetskiy, 2019
 
 SNAPPY must be installed!
@@ -14,7 +12,7 @@ python sent_proc.py --file_in /Users/max/satellite/sentinel-1/data/S1A_IW_GRDH_1
 """
 
 import numpy as np
-import snappy
+
 import fiona as fi
 import time
 import psutil
@@ -22,6 +20,8 @@ import os
 import sys
 import optparse
 
+sys.path.append('/home/maksim/.snap/snap-python')
+import snappy
 # param = snappy.HashMap()
 HashMap = snappy.jpy.get_type('java.util.HashMap')
 # print(param)
@@ -44,21 +44,6 @@ def mt_speckle(p_in, f_out='s1a_speck.dim'):
     return p_terr
 
 
-def border_noise(p_in, f_out='s1a_border.dim'):
-    """
-    S1 Border noise removal
-
-    :param p_in: input snap product
-    :param f_out:
-    :return: Corrected snap product
-    """
-    parameters = snappy.HashMap()
-    p_bord = snappy.GPF.createProduct('Remove-GRD-Border-Noise', parameters, p_in)
-    p_out = snappy.ProductIO.writeProduct(p_bord, f_out, "BEAM-DIMAP")
-
-    return p_bord
-
-
 def thermal_noise(p_in, f_out='s1a_therm.dim'):
     """
     S1 Thermal noise removal
@@ -69,7 +54,7 @@ def thermal_noise(p_in, f_out='s1a_therm.dim'):
     """
     parameters = snappy.HashMap()
     p_therm = snappy.GPF.createProduct('ThermalNoiseRemoval', parameters, p_in)
-    p_out = snappy.ProductIO.writeProduct(p_therm, f_out, "BEAM-DIMAP")
+    p_out = snappy.ProductIO.writeProduct(p_terr, f_out, "BEAM-DIMAP")
 
     return p_therm
 
@@ -231,76 +216,62 @@ if __name__ == "__main__":
 
     timeBefore = time.clock()
 
-    p_in = snappy.ProductIO.readProduct(dir_in + f_in)
+    p = snappy.ProductIO.readProduct(dir_in + f_in)
 
-    print(p_in)
-    print(list(p_in.getBandNames()))
+    print(p)
+    print(list(p.getBandNames()))
 
     print('S1 processing has started')
 
-    timeBeforeOrb = time.clock()
-    print('Extract orbit')
-    f_in = f_in.split('.')[0] + '_orb.dim'
-    p_in = apply_orbit(p_in, dir_out + f_in)
-    timeAfterOrb = time.clock()
-    print 'Applying orbit file lasted for (m): ', (timeAfterOrb - timeBeforeOrb)/60.
-
-    timeBeforeOrb = time.clock()
-    print('Thermal noise removal')
-    f_in = f_in.split('.')[0] + '_therm.dim'
-    p_in = thermal_noise(p_in, dir_out + f_in)
-    timeAfterOrb = time.clock()
-    print 'Thermal noise removal lasted for (m): ', (timeAfterOrb - timeBeforeOrb) / 60.
-
-    timeBeforeOrb = time.clock()
-    print('Border noise removal')
-    f_in = f_in.split('.')[0] + '_border.dim'
-    p_in = border_noise(p_in, dir_out + f_in)
-    timeAfterOrb = time.clock()
-    print 'Border noise removal lasted for (m): ', (timeAfterOrb - timeBeforeOrb) / 60.
-
     timeBeforeCal = time.clock()
     print('Calibration')
-    f_in = f_in.split('.')[0] + '_cal.dim'
-    p_in = calibration(p_in, dir_out + f_in)
+    f_cal = f_in.split('.')[0] + '_cal.dim'
+    p_cal = calibration(p, dir_out + f_cal)
     timeAfterCal = time.clock()
-    print 'Calibration lasted for (m): ', (timeAfterCal - timeBeforeCal)/60.
+    print('Calibration lasted for (m): ', (timeAfterCal - timeBeforeCal)/60.)
 
     if np.logical_and(shp_crop != '', os.path.isfile(shp_crop)):
         timeBeforeSub = time.clock()
         print('Get subset')
-        f_in = f_in.split('.')[0] + '_sub.dim'
-        p_in = get_subset(p_in, shp_crop, dir_out + f_in)
+        f_sub = f_cal.split('.')[0] + '_sub.dim'
+        p_sub = get_subset(p_cal, shp_crop, dir_out + f_sub)
         timeAfterSub = time.clock()
-        print 'Subsetting lasted for (m): ', (timeAfterSub - timeBeforeSub)/60.
+        print('Subsetting lasted for (m): ', (timeAfterSub - timeBeforeSub)/60.)
     else:
         print('Subset file does not exist or you want to process the whole scene')
-        # f_sub = f_cal
-        # p_sub = p_cal
+        f_sub = f_cal
+        p_sub = p_cal
 
-    # timeBeforeMult = time.clock()
-    # print('Multi look')
-    # f_in = f_in.split('.')[0] + '_mult.dim'
-    # p_in = multi_look(p_in, dir_out + f_in)
-    # timeAfterMult = time.clock()
-    # print 'Multi-look processing lasted for (m): ', (timeAfterMult - timeBeforeMult)/60.
+    timeBeforeOrb = time.clock()
+    print('Extract orbit')
+    f_orb = f_sub.split('.')[0] + '_orb.dim'
+    p_orb = apply_orbit(p_sub, dir_out + f_orb)
+    timeAfterOrb = time.clock()
+    print('Applying orbit file lasted for (m): ', (timeAfterOrb - timeBeforeOrb)/60.)
+
+    timeBeforeMult = time.clock()
+    print('Multi look')
+    f_mult = f_orb.split('.')[0] + '_mult.dim'
+    p_mult = multi_look(p_orb, dir_out + f_mult)
+    timeAfterMult = time.clock()
+    print('Multi-look processing lasted for (m): ', (timeAfterMult - timeBeforeMult)/60.)
 
     timeBeforeTerr = time.clock()
     print('Terrain correction')
-    f_in = f_in.split('.')[0] + '_terr.dim'
-    p_in = terrain_correction(p_in, dir_out + f_in)
+    f_terr = f_mult.split('.')[0] + '_terr.dim'
+    p_terr = terrain_correction(p_mult, dir_out + f_terr)
     timeAfterTerr = time.clock()
-    print 'Terrain correction lasted for (m): ', (timeAfterTerr - timeBeforeTerr)/60.
+    print('Terrain correction lasted for (m): ', (timeAfterTerr - timeBeforeTerr)/60.)
 
-    # timeBeforeSpeck = time.clock()
-    # print('Multi Temporal Speckle filtering')
-    # f_in = f_in.split('.')[0] + '_speck.dim'
-    # p_speck = mt_speckle(p_in, dir_out + f_in)
-    # timeAfterSpeck = time.clock()
-    # print 'Multi Temporal speckle filtering lasted for (m): ', (timeAfterSpeck - timeBeforeSpeck)/60.
+    #timeBeforeSpeck = time.clock()
+    #print('Multi Temporal Speckle filtering')
+    #f_speck = f_terr.split('.')[0] + '_speck.dim'
+    #p_speck = mt_speckle(p_terr, dir_out + f_speck)
+    #timeAfterSpeck = time.clock()
+    #print('Multi Temporal speckle filtering lasted for (m): ', (timeAfterSpeck - timeBeforeSpeck)/60.)
 
     timeAfter = time.clock()
-    print 'it lasted for (h): ', (timeAfter - timeBefore)/(60.*60.)
+    print('it lasted for (h): ', (timeAfter - timeBefore)/(60.*60.))
 
     process = psutil.Process(os.getpid())
     print('Process memory (b):')
